@@ -1,0 +1,12 @@
+[package]
+name = "dkg-client-rust-test"
+version = "0.1.0"
+edition = "2018"
+authors = ["OriginTrail"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+dkg-client-rust = { path = "../lib" }
+
