@@ -1,13 +1,25 @@
+use dkg_client_rust::client::DkgClient;
+use reqwest::Client;
+
 extern crate dkg_client_rust;
-use dkg_client_rust::client;
 
-fn main() {
-    let resp = dkg_client_rust::client::resolve("https://mainnet.ot-node.com/", "id").unwrap();
-    println!("{:#?}", resp);
+#[tokio::main]
+async fn main() -> Result<(), Box<(dyn std::error::Error + 'static)>> {
+    //dkg_client_rust::client::DkgClient::init(String::from("http://0.0.0.0:8900/api/latest/info"));
 
-    let resp = dkg_client_rust::client::discover("https://mainnet.ot-node.com/", "topics").unwrap();
-    println!("{:#?}", resp);
+    let DKGClient = DkgClient {
+        http_client: Client::new(),
+        endpoint: String::from("http://0.0.0.0:8900/"),
+    };
 
-    let resp = dkg_client_rust::client::query("https://mainnet.ot-node.com/", "topics", "query").unwrap();
-    println!("{:#?}", resp);
+    let node_infos = DKGClient.node_info().await?;
+    println!("{}", node_infos);
+    println!("Node version: {}", *node_infos.get("version").unwrap());
+
+    //let network_query = DKGClient.network_query(String::from("query")).await?;
+
+    let import_query = DKGClient
+        .publish("~/Documents/example_dataset.json")
+        .await?;
+    Ok(())
 }

@@ -1,30 +1,97 @@
-use std::collections::HashMap;
-pub fn resolve(endpoint: &str, uri: &str) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
-    let resp = reqwest::blocking::get(endpoint)?
-            .json::<HashMap<String, String>>()?;
-    Ok(resp)
+use reqwest::Client;
+use std::fs::File;
+use std::io::Read;
+
+pub struct DkgClient {
+    pub http_client: Client,
+    pub endpoint: String,
 }
 
-pub fn discover(endpoint: &str, topics: &str) -> Result<HashMap<String, String>, Box<dyn std::error::Error>>  {
-    let resp = reqwest::blocking::get(endpoint)?
-                .json::<HashMap<String, String>>()?;
-        Ok(resp)
-}
+impl DkgClient {
+    pub async fn node_info(&self) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let res = self
+            .http_client
+            .get(format!("{}api/latest/info", self.endpoint))
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
+        Ok(res)
+    }
 
-pub fn query(endpoint: &str, topics: &str, query: &str) -> Result<HashMap<String, String>, Box<dyn std::error::Error>>  {
-    let resp = reqwest::blocking::get(endpoint)?
-                .json::<HashMap<String, String>>()?;
-        Ok(resp)
-}
+    pub async fn trail(
+        &self,
+        trail_query: &str,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let res = self
+            .http_client
+            .post(format!("{}api/latest/trail", self.endpoint))
+            .json("")
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
 
+        Ok(res)
+    }
 
-fn main() {
-    let resp = resolve("https://mainnet.ot-node.com/", "id").unwrap();
-    println!("{:#?}", resp);
+    pub async fn network_query(
+        &self,
+        query: String,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let nq_handler = self
+            .http_client
+            .post(format!("{}api/latest/network/query", self.endpoint))
+            .json(&query)
+            .send()
+            .await?
+            .text()
+            .await?;
 
-    let resp = discover("https://mainnet.ot-node.com/", "topics").unwrap();
-    println!("{:#?}", resp);
+        println!("{}", nq_handler);
 
-    let resp = query("https://mainnet.ot-node.com/", "topics", "query").unwrap();
-    println!("{:#?}", resp);
+        let get_res = self
+            .http_client
+            .get(format!(
+                "{}api/latest/network/query/responses/{}",
+                self.endpoint, nq_handler
+            ))
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
+
+        Ok(get_res)
+    }
+
+    pub async fn publish(&self, filename: &str) -> Result<String, Box<dyn std::error::Error>> {
+        let mut file = File::open(filename)?;
+
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        let import_handler = self
+            .http_client
+            .post(format!("{}api/latest/import", self.endpoint))
+            .body(contents)
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        println!("{}", import_handler);
+
+        let get_res = self
+            .http_client
+            .get(format!(
+                "{}api/latest/import/responses/{}",
+                self.endpoint, import_handler
+            ))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        Ok(get_res)
+    }
 }
