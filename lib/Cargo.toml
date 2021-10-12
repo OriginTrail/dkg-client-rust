@@ -3,12 +3,14 @@ name = "dkg-client-rust"
 version = "0.1.0"
 edition = "2018"
 authors = ["OriginTrail"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+homepage = "https://origintrail.io/"
+repository = "https://github.com/OriginTrail/dkg-client-rust"
+description = "Rust client for OriginTrail Decentralized Knowledge Graph"
+license = "GPL-3.0-or-later"
 
 [dependencies]
 
-reqwest = { version = "0.11", features = ["json", "blocking"] }
+reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }

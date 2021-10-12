@@ -22,49 +22,44 @@ pub struct DkgClient {
 
 impl DkgClient {
     pub async fn node_info(&self) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-        let res = self
+        let node_infos = self
             .http_client
             .get(format!("{}api/latest/info", self.endpoint))
             .send()
             .await?
             .json::<serde_json::Value>()
             .await?;
-        Ok(res)
+        Ok(node_infos)
     }
 
     pub async fn network_query(
         &self,
         query: String,
     ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-        //println!("{}", query);
-
-        let nq_handler = self
+        let query_handler = self
             .http_client
             .post(format!("{}api/latest/network/query", self.endpoint))
             .body(query)
             .header("Content-Type", "application/json")
             .send()
             .await?
-            .json::<QueryHandlerStruct>() //.json::<serde_json::Value>()
+            .json::<QueryHandlerStruct>()
             .await?;
 
-        println!("Handler id for query: {}", nq_handler.query_id);
         thread::sleep(time::Duration::from_millis(1000));
 
-        let get_res = self
+        let query_response = self
             .http_client
             .get(format!(
                 "{}api/latest/network/query/responses/{}",
-                self.endpoint, nq_handler.query_id
+                self.endpoint, query_handler.query_id
             ))
             .send()
             .await?
             .json::<serde_json::Value>()
             .await?;
 
-        println!("{}", get_res);
-
-        Ok(get_res)
+        Ok(query_response)
     }
 
     pub async fn publish(
@@ -72,7 +67,6 @@ impl DkgClient {
         filename: &str,
     ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
         let mut file = File::open(filename)?;
-
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
 
@@ -86,13 +80,8 @@ impl DkgClient {
             .form(&form_params)
             .send()
             .await?
-            .json::<HandlerStruct>() //.json::<serde_json::Value>()
+            .json::<HandlerStruct>()
             .await?;
-
-        println!(
-            "Hendler ID for import request is: {}",
-            import_handler.handler_id
-        );
 
         thread::sleep(time::Duration::from_millis(1000));
 
@@ -111,12 +100,7 @@ impl DkgClient {
 
         let dataset_id: String =
             String::from(import_response["data"]["dataset_id"].as_str().unwrap());
-        println!("Imported dataset id is :{}", &dataset_id);
-
-        println!("Starting replication!");
-
         let replication_body = format!("{{\"dataset_id\":\"{}\"}}", dataset_id);
-        println!("Replication body: {}", replication_body);
 
         let replication_handler = self
             .http_client
@@ -125,17 +109,12 @@ impl DkgClient {
             .header("Content-Type", "application/json")
             .send()
             .await?
-            .json::<HandlerStruct>() //.json::<serde_json::Value>()
+            .json::<HandlerStruct>()
             .await?;
-
-        println!(
-            "Hendler ID for replicate request is: {}",
-            replication_handler.handler_id
-        );
 
         thread::sleep(time::Duration::from_millis(1000));
 
-        let get_res = self
+        let replication_result = self
             .http_client
             .get(format!(
                 "{}api/latest/replicate/result/{}",
@@ -146,9 +125,7 @@ impl DkgClient {
             .json::<serde_json::Value>()
             .await?;
 
-        println!("{}", get_res);
-
-        Ok(get_res)
+        Ok(replication_result)
     }
 
     pub async fn trail(
@@ -165,7 +142,6 @@ impl DkgClient {
             .json::<serde_json::Value>() //.json::<serde_json::Value>()
             .await?;
 
-        println!("Trail response: {}", trail);
         thread::sleep(time::Duration::from_millis(1000));
 
         Ok(trail)
