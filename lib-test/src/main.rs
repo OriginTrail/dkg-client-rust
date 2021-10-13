@@ -15,18 +15,12 @@ async fn main() -> Result<(), Box<(dyn std::error::Error + 'static)>> {
     println!("Node info struct: {}", node_infos);
     println!("Node version: {}", node_infos["version"]);
 
-    let tquery = r#"
-        {
-            "identifier_types": ["id"],
-            "identifier_values": ["test1"],
-            "depth": 10
-        }
-    "#;
+    let publishing_reponse = dkg_client.publish("../dataset.json").await?;
 
-    let trail_query = dkg_client.trail(String::from(tquery)).await?;
-
-    println!("Trail result:\n{}", trail_query);
-    println!("Id of object is: {}", trail_query[0]["otObject"]["@id"]);
+    println!(
+        "Status for our dataset is: {}",
+        publishing_reponse["status"].as_str().unwrap()
+    );
 
     Ok(())
 }
