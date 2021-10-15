@@ -96,7 +96,8 @@ impl DkgClient {
             .json::<serde_json::Value>()
             .await?;
 
-        thread::sleep(time::Duration::from_millis(1000));
+        println!("Waiting for data to be imported...");
+        thread::sleep(time::Duration::from_millis(10000));
 
         let dataset_id: String =
             String::from(import_response["data"]["dataset_id"].as_str().unwrap());
@@ -145,5 +146,38 @@ impl DkgClient {
         thread::sleep(time::Duration::from_millis(1000));
 
         Ok(trail)
+    }
+
+    pub async fn export(
+        &self,
+        dataset_id: String,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let mut form_params = HashMap::new();
+        form_params.insert("dataset_id".to_string(), dataset_id);
+        form_params.insert("standard_id".to_string(), "GRAPH".to_string());
+
+        let export_handler = self
+            .http_client
+            .post(format!("{}api/latest/export", self.endpoint))
+            .form(&form_params)
+            .send()
+            .await?
+            .json::<HandlerStruct>()
+            .await?;
+
+        thread::sleep(time::Duration::from_millis(1000));
+
+        let query_response = self
+            .http_client
+            .get(format!(
+                "{}api/latest/export/result/{}",
+                self.endpoint, export_handler.handler_id
+            ))
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
+
+        Ok(query_response)
     }
 }
